@@ -7,6 +7,15 @@ tasks:
       - docker stop $(docker ps -q)
 
   # 啟動資料庫
+  db:
+    cmds:
+      # 啟動mysql
+      - docker build -t home-mysql -f MySQL/Dockerfile .
+      - docker rm -f -v home-mysql || true
+      - docker volume rm dbmysql-volume || true
+      - docker run -d --name home-mysql --network home -v dbmysql-volume:/var/lib/mysql -p 3306:3306 -e MYSQL_ROOT_PASSWORD=root home-mysql
+
+  # 啟動資料庫
   wordpress:
     cmds:
       # 檢查網路是否存在, 不然就建立它
