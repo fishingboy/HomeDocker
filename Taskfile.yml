@@ -6,11 +6,7 @@ tasks:
     cmds:
       - docker stop $(docker ps -q)
 
-  # 停止容器
-  start:
-    deps: [ stop, db, wordpress ]
-
-  # 啟動資料庫
+  # 建立網路 home
   network:
     cmds:
       # 檢查網路是否存在, 不然就建立它
@@ -30,11 +26,19 @@ tasks:
       - docker volume rm dbmysql-volume || true
       - docker run -d --name home-mysql --network home -v dbmysql-volume:/var/lib/mysql -p 3306:3306 -e MYSQL_ROOT_PASSWORD=root home-mysql
 
-  # 啟動資料庫
+  # 啟動 Nginx
+  nginx:
+    deps: [ network ]
+    cmds:
+      - docker rm -f -v home-nginx || true
+      - docker image rm home-nginx || true
+      - docker build -t home-nginx -f Nginx/Dockerfile .
+      - docker run -d --name home-nginx --network home -p 80:80 -p 443:443 -p 8080:8080 home-nginx
+
+  # 啟動 WordPress
   wordpress:
     deps: [ network ]
     cmds:
-      # 啟動 WordPress
       - docker build -t home-wordpress -f WordPress/Dockerfile .
       - docker stop home-wordpress || true
       - docker rm home-wordpress || true
