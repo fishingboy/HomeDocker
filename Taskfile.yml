@@ -33,8 +33,19 @@ tasks:
       - docker rm -f -v home-nginx || true
       - docker image rm home-nginx || true
       - docker build -t home-nginx -f Nginx/Dockerfile .
-      - docker run -d --name home-nginx --network home -p 80:80 -p 443:443 -p 8080:8080 home-nginx
-
+      - |
+          case "$(uname)" in
+            MINGW*|CYGWIN*|MSYS*)
+              echo "Windows"
+              echo "Windows"
+              echo "Windows"
+              docker run -d --name home-nginx --network home -v "C:\data\nginx\:/data/nginx" -p 80:80 -p 443:443 -p 8080:8080 home-nginx
+              ;;
+            *)
+              echo "Linux"
+              docker run -d --name home-nginx --network home -v /data/nginx:/data/nginx -p 80:80 -p 443:443 -p 8080:8080 home-nginx
+              ;;
+          esac
   # 啟動 WordPress
   wordpress:
     deps: [ network ]
