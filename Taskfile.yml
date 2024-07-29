@@ -47,19 +47,51 @@ tasks:
           case "$(uname)" in
             MINGW*|CYGWIN*|MSYS*)
               echo "Windows"
-              docker run -d --name home-nginx --network home -v "C:\data\nginx\:/data/nginx" -p 80:80 -p 443:443 -p 8080:8080 home-nginx
+              docker run -d --name home-nginx --network home -v "C:\data:/data" -p 80:80 -p 443:443 -p 8080:8080 home-nginx
               ;;
             *)
               echo "Linux"
-              docker run -d --name home-nginx --network home -v /data/nginx:/data/nginx -p 80:80 -p 443:443 -p 8080:8080 home-nginx
+              docker run -d --name home-nginx --network home -v /data:/data -p 80:80 -p 443:443 -p 8080:8080 home-nginx
               ;;
           esac
+      - docker exec home-nginx mkdir -p /data/nginx/conf.d
+      - docker exec home-nginx mkdir -p /data/nginx/log
+      - docker exec home-nginx mkdir -p /data/nginx/www
+
+  # 啟動 PHP
+  php:
+    deps: [ network ]
+    cmds:
+      - docker image rm home-php || true
+      - docker rm -f -v home-php || true
+      - docker build -t home-php -f PHP/Dockerfile .
+      - |
+        case "$(uname)" in
+          MINGW*|CYGWIN*|MSYS*)
+            echo "Windows"
+            docker run -d --name home-php --network home -v "C:\data\:/data" -p 9000:9000 home-php
+            ;;
+          *)
+            echo "Linux"
+            docker run -d --name home-php --network home -v /data:/data -p 9000:9000 home-php
+            ;;
+        esac
 
   # 啟動 WordPress
   wordpress:
     deps: [ network ]
     cmds:
-      - docker build -t home-wordpress -f WordPress/Dockerfile .
-      - docker stop home-wordpress || true
-      - docker rm home-wordpress || true
-      - docker run --name home-wordpress --network home -p 8080:80 -d home-wordpress
+      - |
+        docker exec home-nginx rm -rf /data/wordpress
+        docker cp WordPress/wordpress6.6.1 home-nginx:/data/
+        docker exec home-nginx mv /data/wordpress6.6.1 /data/wordpress
+      - docker exec home-nginx rm -rf /data/nginx/conf.d/wordpress.conf
+      - docker cp WordPress/wordpress.conf home-nginx:/data/nginx/conf.d/
+      - docker exec home-nginx rm -rf /etc/nginx/conf.d/default.conf
+      - docker restart home-nginx
+
+  # 啟動 Jenkins
+  jenkins:
+    deps: [ network ]
+    cmds:
+      - docker run -p 8080:8080 -p 50000:50000 --restart=on-failure -v jenkins_home:/var/jenkins_home jenkins/jenkins:lts-jdk17
