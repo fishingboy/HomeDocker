@@ -81,12 +81,12 @@ tasks:
   wordpress:
     deps: [ network ]
     cmds:
-      - |
-        docker exec home-nginx rm -rf /data/wordpress
-        docker cp WordPress/wordpress6.6.1 home-nginx:/data/
-        docker exec home-nginx mv /data/wordpress6.6.1 /data/wordpress
+      - docker exec home-nginx rm -rf /data/wordpress
+      - docker cp WordPress/wordpress6.6.1 home-nginx:/data/
+      - docker exec home-nginx mv /data/wordpress6.6.1 /data/wordpress
       - docker exec home-nginx rm -rf /data/nginx/conf.d/wordpress.conf
       - docker cp WordPress/wordpress.conf home-nginx:/data/nginx/conf.d/
+      - docker exec home-nginx mkdir -p /data/nginx/log/wordpress.evonne-chen.com/
       - docker exec home-nginx rm -rf /etc/nginx/conf.d/default.conf
       - docker restart home-nginx
 
